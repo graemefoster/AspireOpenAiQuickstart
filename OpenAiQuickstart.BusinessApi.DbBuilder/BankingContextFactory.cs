@@ -10,10 +10,13 @@ public class BankingContextFactory : IDesignTimeDbContextFactory<BankingContext>
     {
         var optionsBuilder = new DbContextOptionsBuilder<BankingContext>();
         optionsBuilder.UseSqlServer(
-            "Server=.\\SQLEXPRESS;Database=Banking;Trusted_Connection=True;MultipleActiveResultSets=true; TrustServerCertificate=true",
-            sqlOptions => sqlOptions.MigrationsAssembly(typeof(BankingContextFactory).Assembly.FullName));
+                "Server=.\\SQLEXPRESS;Database=Banking;Trusted_Connection=True;MultipleActiveResultSets=true; TrustServerCertificate=true",
+                sqlOptions =>
+                    sqlOptions
+                        .MigrationsAssembly(typeof(BankingContextFactory).Assembly.FullName)
+                        .UseNetTopologySuite())
+            ;
 
         return new BankingContext(optionsBuilder.Options);
     }
 }
-

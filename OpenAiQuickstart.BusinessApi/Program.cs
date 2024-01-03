@@ -21,7 +21,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 builder.Services.AddDbContext<BankingContext>(
     (sp, options) =>
         options.UseSqlServer(sp.GetRequiredService<IOptions<Configuration>>().Value.ConnectionString,
-            sqlOptions => sqlOptions.MigrationsAssembly("OpenAiQuickstart.BusinessApi.DbBuilder")));
+            sqlOptions => sqlOptions.UseNetTopologySuite()));
 
 var app = builder.Build();
 
@@ -40,7 +40,8 @@ app.MapGet("/account/{accountNumber}",
     .WithOpenApi();
 
 app.MapGet("/account/{accountNumber}/transactions",
-        (BankingContext context, Guid accountNumber) => context.AccountTransactions.Where(x => x.From == accountNumber))
+        (BankingContext context, Guid accountNumber) => context.AccountTransactions.Where(x => x.From == accountNumber)
+            .OrderByDescending(x => x.Date))
     .WithName("GetAccountTransactions")
     .WithOpenApi();
 

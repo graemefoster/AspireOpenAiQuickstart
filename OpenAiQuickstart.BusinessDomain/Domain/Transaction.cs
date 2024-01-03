@@ -4,19 +4,24 @@ namespace OpenAiQuickstart.BusinessDomain.Domain;
 
 public class Transaction
 {
-    internal Transaction(Guid id, DateTimeOffset date, string reference)
+    internal Transaction(Guid id, DateTimeOffset date, bool isCredit, string reference)
     {
         Id = id;
         Date = date;
+        IsCredit = isCredit;
         Reference = reference;
     }
 
     [Key]
     public Guid Id { get; init; }
-    
-    [Required]
+
+    public Guid? ToId { get; init; }
+
     [MaxLength(30)]
-    public string To { get; init; }
+    public string? ToAccount { get; init; }
+
+    [MaxLength(6)]
+    public string? ToSortCode { get; init; }
 
     [Required]
     public Guid From { get; init; }
@@ -25,6 +30,7 @@ public class Transaction
     public required Money FinalisedAmountInCents { get; init; }
 
     public DateTimeOffset Date { get; init; }
+    public required bool IsCredit { get; init; }
     public Guid? RelatedTo { get; init; }
     
     [MaxLength(255)]

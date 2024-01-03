@@ -27,15 +27,15 @@ else
         <tr>
             <th>Date</th>
             <th>To Account</th>
-            <th>Pending Amount</th>
-            <th>Finalised Amount</th>
+            <th>Amount</th>
+            <th>Is Pending</th>
             <th>Reference</th>
         </tr>
         </thead>
         @foreach (var transaction in _transactions)
         {
             <tr>
-                <td>@transaction.Date</td>
+                <td>@transaction.Date.ToLocalTime().ToString("g")</td>
                 <td>@transaction.To</td>
                 <td>@((transaction.Amount / 100.0).ToString("C2"))</td>
                 <td>@transaction.IsPending</td>

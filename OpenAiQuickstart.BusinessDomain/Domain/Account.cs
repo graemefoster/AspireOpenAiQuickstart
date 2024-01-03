@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using NetTopologySuite.Geometries;
 
 namespace OpenAiQuickstart.BusinessDomain.Domain;
 
@@ -20,4 +21,22 @@ public class Account
         AccountNumber = accountNumber;
         Name = name;
     }
+}
+
+public class Merchant
+{
+    public required Guid Id { get; init; }
+
+    [MaxLength(6)]
+    public required string SortCode { get; init; }
+    [MaxLength(15)]
+    public required string AccountNumber { get; init; }
+    [MaxLength(200)]
+    public required string Category { get; init; }
+    [MaxLength(200)]
+    public required string Name { get; init; }
+    
+    [MaxLength(10)]
+    public string? Postcode { get; init; }
+    public Point? Location { get; init; }
 }

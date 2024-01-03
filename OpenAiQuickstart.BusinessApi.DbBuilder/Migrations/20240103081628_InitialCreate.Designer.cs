@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using NetTopologySuite.Geometries;
 using OpenAiQuickstart.BusinessDomain;
 
 #nullable disable
@@ -13,7 +14,7 @@ using OpenAiQuickstart.BusinessDomain;
 namespace OpenAi.Quickstart.BusinessApi.DbBuilder.Migrations
 {
     [DbContext(typeof(BankingContext))]
-    [Migration("20240103051322_InitialCreate")]
+    [Migration("20240103081628_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -30,7 +31,8 @@ namespace OpenAi.Quickstart.BusinessApi.DbBuilder.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
 
                     b.Property<string>("AccountNumber")
                         .IsRequired()
@@ -56,7 +58,8 @@ namespace OpenAi.Quickstart.BusinessApi.DbBuilder.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
@@ -71,17 +74,60 @@ namespace OpenAi.Quickstart.BusinessApi.DbBuilder.Migrations
                     b.ToTable("Customers");
                 });
 
+            modelBuilder.Entity("OpenAiQuickstart.BusinessDomain.Domain.Merchant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<string>("AccountNumber")
+                        .IsRequired()
+                        .HasMaxLength(15)
+                        .HasColumnType("nvarchar(15)");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Point>("Location")
+                        .HasColumnType("geography");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Postcode")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("SortCode")
+                        .IsRequired()
+                        .HasMaxLength(6)
+                        .HasColumnType("nvarchar(6)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Merchants");
+                });
+
             modelBuilder.Entity("OpenAiQuickstart.BusinessDomain.Domain.Transaction", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
 
                     b.Property<DateTimeOffset>("Date")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<Guid>("From")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsCredit")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Reference")
                         .IsRequired()
@@ -91,10 +137,16 @@ namespace OpenAi.Quickstart.BusinessApi.DbBuilder.Migrations
                     b.Property<Guid?>("RelatedTo")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("To")
-                        .IsRequired()
+                    b.Property<string>("ToAccount")
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
+
+                    b.Property<Guid?>("ToId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ToSortCode")
+                        .HasMaxLength(6)
+                        .HasColumnType("nvarchar(6)");
 
                     b.ComplexProperty<Dictionary<string, object>>("FinalisedAmountInCents", "OpenAiQuickstart.BusinessDomain.Domain.Transaction.FinalisedAmountInCents#Money", b1 =>
                         {
@@ -118,6 +170,8 @@ namespace OpenAi.Quickstart.BusinessApi.DbBuilder.Migrations
 
                     b.HasIndex("RelatedTo");
 
+                    b.HasIndex("ToId");
+
                     b.ToTable("Transactions");
                 });
 
@@ -140,10 +194,13 @@ namespace OpenAi.Quickstart.BusinessApi.DbBuilder.Migrations
 
                     b.Property<string>("Reference")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
-                    b.Property<Guid>("To")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("To")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
 
@@ -172,6 +229,11 @@ namespace OpenAi.Quickstart.BusinessApi.DbBuilder.Migrations
                     b.HasOne("OpenAiQuickstart.BusinessDomain.Domain.Transaction", null)
                         .WithMany()
                         .HasForeignKey("RelatedTo");
+
+                    b.HasOne("OpenAiQuickstart.BusinessDomain.Domain.Account", null)
+                        .WithMany()
+                        .HasForeignKey("ToId")
+                        .OnDelete(DeleteBehavior.NoAction);
                 });
 #pragma warning restore 612, 618
         }
