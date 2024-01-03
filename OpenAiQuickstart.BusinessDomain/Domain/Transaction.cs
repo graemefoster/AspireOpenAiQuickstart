@@ -15,13 +15,14 @@ public class Transaction
     public Guid Id { get; init; }
     
     [Required]
-    public Guid To { get; init; }
+    [MaxLength(30)]
+    public string To { get; init; }
 
     [Required]
     public Guid From { get; init; }
 
-    public Money PendingAmountInCents { get; init; }
-    public Money FinalisedAmountInCents { get; init; }
+    public required Money PendingAmountInCents { get; init; }
+    public required Money FinalisedAmountInCents { get; init; }
 
     public DateTimeOffset Date { get; init; }
     public Guid? RelatedTo { get; init; }

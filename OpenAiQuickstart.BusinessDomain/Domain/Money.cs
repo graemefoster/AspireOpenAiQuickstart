@@ -3,4 +3,4 @@
 public record Money
 {
     public required long Cents { get; init; }
-};
+}

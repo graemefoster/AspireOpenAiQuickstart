@@ -4,6 +4,7 @@ using OpenAiQuickstart.BusinessApi;
 using OpenAiQuickstart.BusinessDomain;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddServiceDefaults();
 
 builder.Services.Configure<Configuration>(builder.Configuration.GetSection("ApiOptions"));
 
@@ -12,11 +13,15 @@ builder.Services.Configure<Configuration>(builder.Configuration.GetSection("ApiO
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new MoneyJsonConverter());
+});
+
 builder.Services.AddDbContext<BankingContext>(
     (sp, options) =>
         options.UseSqlServer(sp.GetRequiredService<IOptions<Configuration>>().Value.ConnectionString,
             sqlOptions => sqlOptions.MigrationsAssembly("OpenAiQuickstart.BusinessApi.DbBuilder")));
-;
 
 var app = builder.Build();
 
@@ -30,8 +35,13 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.MapGet("/account/{accountNumber}",
-        (BankingContext context, Guid accountNumber) => context.Accounts.Find(accountNumber))
+        (BankingContext context, Guid accountNumber) => context.Accounts.FindAsync(accountNumber).Result)
     .WithName("GetAccount")
+    .WithOpenApi();
+
+app.MapGet("/account/{accountNumber}/transactions",
+        (BankingContext context, Guid accountNumber) => context.AccountTransactions.Where(x => x.From == accountNumber))
+    .WithName("GetAccountTransactions")
     .WithOpenApi();
 
 app.Run();

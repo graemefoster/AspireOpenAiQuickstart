@@ -1,6 +1,8 @@
-﻿namespace OpenAiQuickstart.BusinessApi;
+﻿using System.Globalization;
+
+namespace OpenAiQuickstart.BusinessApi;
 
 public class Configuration
 {
-    public string ConnectionString { get; set; }
+    public required string ConnectionString { get; init; }
 }

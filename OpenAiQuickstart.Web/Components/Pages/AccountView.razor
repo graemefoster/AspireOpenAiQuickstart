@@ -1,0 +1,58 @@
+﻿@page "/weather"
+@attribute [StreamRendering(true)]
+@attribute [OutputCache(Duration = 5)]
+
+@inject BankingClient BankingApi
+
+<PageTitle>Account Details</PageTitle>
+
+<h1>Account</h1>
+
+@if (_account == null)
+{
+    <p>
+        <em>Loading...</em>
+    </p>
+}
+else
+{
+    <h1>@_account.Name</h1>
+}
+
+@if (_transactions != null)
+{
+    <h1>Transactions</h1>
+    <table>
+        <thead>
+        <tr>
+            <th>Date</th>
+            <th>To Account</th>
+            <th>Pending Amount</th>
+            <th>Finalised Amount</th>
+            <th>Reference</th>
+        </tr>
+        </thead>
+        @foreach (var transaction in _transactions)
+        {
+            <tr>
+                <td>@transaction.Date</td>
+                <td>@transaction.To</td>
+                <td>@((transaction.Amount / 100.0).ToString("C2"))</td>
+                <td>@transaction.IsPending</td>
+                <td>@transaction.Reference</td>
+            </tr>
+        }
+    </table>
+}
+
+@code {
+    private Account? _account;
+    private Transaction[]? _transactions;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _account = await BankingApi.GetAccount();
+        _transactions = await BankingApi.GetTransactions();
+    }
+
+}

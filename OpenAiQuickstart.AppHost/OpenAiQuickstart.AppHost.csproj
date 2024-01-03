@@ -11,11 +11,12 @@
   <ItemGroup>
     <ProjectReference Include="..\OpenAiQuickstart.AICentral\OpenAiQuickstart.AICentral.csproj" />
     <ProjectReference Include="..\OpenAiQuickstart.ApiService\OpenAiQuickstart.ApiService.csproj" />
+    <ProjectReference Include="..\OpenAiQuickstart.BusinessApi\OpenAiQuickstart.BusinessApi.csproj" />
     <ProjectReference Include="..\OpenAiQuickstart.Web\OpenAiQuickstart.Web.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting" Version="8.0.0-preview.1.23557.2" />
+    <PackageReference Include="Aspire.Hosting" Version="8.0.0-preview.2.23619.3" />
   </ItemGroup>
 
 </Project>

@@ -13,7 +13,7 @@ using OpenAiQuickstart.BusinessDomain;
 namespace OpenAi.Quickstart.BusinessApi.DbBuilder.Migrations
 {
     [DbContext(typeof(BankingContext))]
-    [Migration("20240103030526_InitialCreate")]
+    [Migration("20240103051322_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -31,6 +31,11 @@ namespace OpenAi.Quickstart.BusinessApi.DbBuilder.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AccountNumber")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<Guid>("CustomerId")
                         .HasColumnType("uniqueidentifier");
@@ -86,8 +91,10 @@ namespace OpenAi.Quickstart.BusinessApi.DbBuilder.Migrations
                     b.Property<Guid?>("RelatedTo")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("To")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("To")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
 
                     b.ComplexProperty<Dictionary<string, object>>("FinalisedAmountInCents", "OpenAiQuickstart.BusinessDomain.Domain.Transaction.FinalisedAmountInCents#Money", b1 =>
                         {
@@ -111,9 +118,38 @@ namespace OpenAi.Quickstart.BusinessApi.DbBuilder.Migrations
 
                     b.HasIndex("RelatedTo");
 
-                    b.HasIndex("To");
-
                     b.ToTable("Transactions");
+                });
+
+            modelBuilder.Entity("OpenAiQuickstart.BusinessDomain.Views.AccountTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("Amount")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("Date")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("From")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsPending")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Reference")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("To")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.ToTable((string)null);
+
+                    b.ToView("AccountTransactions", (string)null);
                 });
 
             modelBuilder.Entity("OpenAiQuickstart.BusinessDomain.Domain.Account", b =>
@@ -136,12 +172,6 @@ namespace OpenAi.Quickstart.BusinessApi.DbBuilder.Migrations
                     b.HasOne("OpenAiQuickstart.BusinessDomain.Domain.Transaction", null)
                         .WithMany()
                         .HasForeignKey("RelatedTo");
-
-                    b.HasOne("OpenAiQuickstart.BusinessDomain.Domain.Account", null)
-                        .WithMany()
-                        .HasForeignKey("To")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

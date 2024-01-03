@@ -30,6 +30,7 @@ namespace OpenAi.Quickstart.BusinessApi.DbBuilder.Migrations
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CustomerId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    AccountNumber = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
                 },
                 constraints: table =>
@@ -47,7 +48,7 @@ namespace OpenAi.Quickstart.BusinessApi.DbBuilder.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    To = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    To = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
                     From = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Date = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
                     RelatedTo = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
@@ -61,11 +62,6 @@ namespace OpenAi.Quickstart.BusinessApi.DbBuilder.Migrations
                     table.ForeignKey(
                         name: "FK_Transactions_Accounts_From",
                         column: x => x.From,
-                        principalTable: "Accounts",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_Transactions_Accounts_To",
-                        column: x => x.To,
                         principalTable: "Accounts",
                         principalColumn: "Id");
                     table.ForeignKey(
@@ -89,14 +85,8 @@ namespace OpenAi.Quickstart.BusinessApi.DbBuilder.Migrations
                 name: "IX_Transactions_RelatedTo",
                 table: "Transactions",
                 column: "RelatedTo");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Transactions_To",
-                table: "Transactions",
-                column: "To");
             
             migrationBuilder.Seed();
-
         }
 
         /// <inheritdoc />
