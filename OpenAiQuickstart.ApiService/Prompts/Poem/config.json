@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "type": "completion",
+  "description": "Creates a poem in response to the temperature",
+  "execution_settings": {
+    "default": {
+      "max_tokens": 200,
+      "temperature": 0.75
+    },
+    "foo": {
+      "model_id": "gpt-3.5-turbo-0613",
+      "max_tokens": 4000,
+      "temperature": 0.1
+    }
+  },
+  "input_variables": [
+    {
+      "name": "input",
+      "description": "The temperature in C.",
+      "required": true
+    }
+  ]
+}
