@@ -20,9 +20,9 @@ public static class DataSeeder
                              		[Amount] = COALESCE(T2.FinalisedAmountInCents_Cents, T1.FinalisedAmountInCents_Cents),
                              		IsPending = CAST((CASE WHEN T2.FinalisedAmountInCents_Cents IS NULL THEN 1  ELSE 0 END) AS BIT),
                              		Reference = T1.Reference,
-                             		M.[Name],
-                             		M.[Category],
-                             		M.[Location]
+                                    MerchantName = M.[Name],
+                                    MerchantCategory = M.[Category],
+                                    MerchantLocation = M.[Location]
                              	FROM
                              		[dbo].[Transactions] T1
                              		LEFT OUTER JOIN [dbo].[Transactions] T2 ON T1.Id = T2.RelatedTo

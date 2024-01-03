@@ -15,7 +15,10 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
-    options.SerializerOptions.Converters.Add(new MoneyJsonConverter());
+    options.SerializerOptions.Converters
+        .Add(new MoneyJsonConverter());
+    options.SerializerOptions.Converters
+        .Add(new PointJsonConverter());
 });
 
 builder.Services.AddDbContext<BankingContext>(

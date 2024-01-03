@@ -26,20 +26,30 @@ else
         <thead>
         <tr>
             <th>Date</th>
+            <th>To Internal Account Id</th>
+            <th>To Sort Code</th>
             <th>To Account</th>
             <th>Amount</th>
             <th>Is Pending</th>
             <th>Reference</th>
+            <th>Merchant Name</th>
+            <th>Merchant Category</th>
+            <th>Merchant Location</th>
         </tr>
         </thead>
         @foreach (var transaction in _transactions)
         {
             <tr>
                 <td>@transaction.Date.ToLocalTime().ToString("g")</td>
-                <td>@transaction.To</td>
+                <td>@transaction.ToId</td>
+                <td>@transaction.ToSortCode</td>
+                <td>@transaction.ToAccount</td>
                 <td>@((transaction.Amount / 100.0).ToString("C2"))</td>
                 <td>@transaction.IsPending</td>
                 <td>@transaction.Reference</td>
+                <td>@transaction.MerchantName</td>
+                <td>@transaction.MerchantCategory</td>
+                <td>@transaction.MerchantLocation?[0], @transaction.MerchantLocation?[1]</td>
             </tr>
         }
     </table>

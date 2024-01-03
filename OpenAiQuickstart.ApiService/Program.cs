@@ -16,7 +16,7 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler();
 
-var accountId = "5E81D6E0-33D9-4B38-9955-018CCDBE6219";
+var accountId = "35030BE7-CED0-4619-9F0D-018CCE9C9E75";
 app.MapGet("/account", async (HttpClient client) => (JsonDocument.Parse(await (await client.GetAsync($"http://bankingapi/account/{accountId}")).Content.ReadAsStringAsync())));
 app.MapGet("/account/transactions", async (HttpClient client) => (JsonDocument.Parse(await (await client.GetAsync($"http://bankingapi/account/{accountId}/transactions")).Content.ReadAsStringAsync())));
 

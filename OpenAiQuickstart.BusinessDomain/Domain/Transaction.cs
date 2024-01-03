@@ -17,7 +17,7 @@ public class Transaction
 
     public Guid? ToId { get; init; }
 
-    [MaxLength(30)]
+    [MaxLength(15)]
     public string? ToAccount { get; init; }
 
     [MaxLength(6)]
