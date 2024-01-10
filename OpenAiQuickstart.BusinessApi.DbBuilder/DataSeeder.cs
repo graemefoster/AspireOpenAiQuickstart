@@ -20,26 +20,26 @@ public static class DataSeeder
     {
         migrationBuilder.Sql("""
                                 CREATE VIEW AccountTransactions AS
-                             	SELECT
-                             		T1.Id,
-                              		T1.[From],
-                                    T1.[ToId],
-                                    T1.[ToSortCode],
-                                    T1.[ToAccount],
-                             		T1.[Date],
-                             		T1.[IsCredit],
-                             		[Amount] = COALESCE(T2.FinalisedAmountInCents_Cents, T1.FinalisedAmountInCents_Cents),
-                             		IsPending = CAST((CASE WHEN T2.FinalisedAmountInCents_Cents IS NULL THEN 1  ELSE 0 END) AS BIT),
-                             		Reference = T1.Reference,
+                                SELECT
+                                    T1.Id,
+                                    T1.[From],
+                                     T1.[ToSortCode],
+                                     [ToAccount] = ISNULL(A.AccountNumber, T1.[ToAccount]),
+                                    T1.[Date],
+                                    T1.[IsCredit],
+                                    [Amount] = COALESCE(T2.FinalisedAmountInCents_Cents, T1.FinalisedAmountInCents_Cents),
+                                    IsPending = CAST((CASE WHEN T2.FinalisedAmountInCents_Cents IS NULL THEN 1  ELSE 0 END) AS BIT),
+                                    Reference = T1.Reference,
                                     MerchantName = M.[Name],
                                     MerchantCategory = M.[Category],
                                     MerchantLocation = M.[Location]
-                             	FROM
-                             		[dbo].[Transactions] T1
-                             		LEFT OUTER JOIN [dbo].[Transactions] T2 ON T1.Id = T2.RelatedTo
-                             		LEFT OUTER JOIN [dbo].Merchants M ON T1.ToSortCode = M.SortCode AND T1.ToAccount = M.AccountNumber
-                             	WHERE
-                             		T1.RelatedTo IS NULL
+                                FROM
+                                    [dbo].[Transactions] T1
+                                    LEFT OUTER JOIN [dbo].[Transactions] T2 ON T1.Id = T2.RelatedTo
+                                    LEFT OUTER JOIN [dbo].Merchants M ON T1.ToSortCode = M.SortCode AND T1.ToAccount = M.AccountNumber
+                             		LEFT OUTER JOIN [dbo].Accounts A ON T1.ToId = A.Id
+                                WHERE
+                                    T1.RelatedTo IS NULL
                              """);
 
         var customers = new List<Guid>();
@@ -428,20 +428,21 @@ public static class DataSeeder
             "Netflix", "Spotify", "Amazon", "Books", "Games", "Movies", "Music"
         };
         var seed = new Random(645234);
-        var pendingMerchant =
-            new Dictionary<Guid, (Guid, Guid?, string?, string?, string, int, DateTimeOffset, bool)>();
-        var finalisedMerchant =
+        var merchantTransactions =
             new Dictionary<Guid, (Guid, Guid?, string?, string?, string, int, DateTimeOffset, bool)>();
 
         for (int i = 0; i < 10000; i++)
         {
-            var date = DateTimeOffset.UtcNow.AddDays(-seed.Next(0, 365));
-
             //what type of transaction?
             var transactionType = (TransactionType)seed.Next(0, Enum.GetValues(typeof(TransactionType)).Length);
+            if (transactionType == TransactionType.RefundedMerchantPayment && merchantTransactions.Count == 0)
+            {
+                transactionType = TransactionType.MerchantPayment;
+            }
 
             if (transactionType == TransactionType.CashInOut)
             {
+                var date = DateTimeOffset.UtcNow.AddDays(-seed.Next(0, 365));
                 var amount = seed.Next(500, 1500000);
                 var isCredit = seed.Next(0, 2) == 0;
                 var account = accountNumbers[seed.Next(0, accountNumbers.Count)].Item1;
@@ -453,6 +454,7 @@ public static class DataSeeder
             }
             else if (transactionType == TransactionType.InternalTransfer)
             {
+                var date = DateTimeOffset.UtcNow.AddDays(-seed.Next(0, 365));
                 var amount = seed.Next(500, 1500000);
                 var fromAccount = accountNumbers[seed.Next(0, accountNumbers.Count)].Item1;
                 var toAccount = accountNumbers[seed.Next(0, accountNumbers.Count)].Item1;
@@ -470,6 +472,7 @@ public static class DataSeeder
             }
             else if (transactionType == TransactionType.PayAnyone)
             {
+                var date = DateTimeOffset.UtcNow.AddDays(-seed.Next(0, 365));
                 var amount = seed.Next(1, 150000);
                 var account = accountNumbers[seed.Next(0, accountNumbers.Count)].Item1;
                 var toSortCode = seed.Next(100000, 999999).ToString();
@@ -487,8 +490,9 @@ public static class DataSeeder
                     reference, false
                 ];
             }
-            else //if (transactionType == TransactionType.MerchantPayment)
+            else if (transactionType == TransactionType.MerchantPayment)
             {
+                var date = DateTimeOffset.UtcNow.AddDays(-seed.Next(0, 365));
                 var amount = seed.Next(1, 150000);
                 var account = accountNumbers[seed.Next(0, accountNumbers.Count)].Item1;
                 var merchant = seed.Next(merchants.Count);
@@ -496,17 +500,43 @@ public static class DataSeeder
                 var toAccountNumber = merchants[merchant].Item2;
                 var reference = transactionDescriptors[seed.Next(0, transactionDescriptors.Length)];
                 var transactionId = NextGuid();
+                var finalisedTransactionId = NextGuid();
                 var finalisedDate = date.AddMinutes(seed.Next(0, 5000));
 
                 yield return
                 [
                     transactionId, null, toSortCode, toAccountNumber, account, amount, 0, date, null, reference, false
                 ];
+
                 yield return
                 [
-                    NextGuid(), null, toSortCode, toAccountNumber, account, 0, amount, finalisedDate, transactionId,
+                    finalisedTransactionId, null, toSortCode, toAccountNumber, account, 0, amount, finalisedDate,
+                    transactionId,
                     reference, false
                 ];
+
+                merchantTransactions.Add(finalisedTransactionId,
+                    (account, null, toSortCode, toAccountNumber, reference, amount, date, false));
+            }
+            else if (transactionType == TransactionType.RefundedMerchantPayment)
+            {
+                var toRefund = merchantTransactions.Keys.ToList()[seed.Next(0, merchantTransactions.Keys.Count)];
+                var (account, toAccountId, toSortCode, toAccountNumber, reference, amount, date, _) = merchantTransactions[toRefund];
+                merchantTransactions.Remove(toRefund);
+                var refundedPendingDate = date.AddDays(seed.Next(1, 14));
+                var refundedFinalisedDate = refundedPendingDate.AddMinutes(seed.Next(0, 5000));
+                var transactionId = NextGuid();
+                var finalisedTransactionId = NextGuid();
+
+                yield return
+                [
+                    transactionId, null, toSortCode, toAccountNumber, account, amount, 0, refundedPendingDate, toRefund, $"{reference} refund", true
+                ];
+                yield return
+                [
+                    finalisedTransactionId, null, toSortCode, toAccountNumber, account, 0, amount, refundedFinalisedDate, transactionId, $"{reference} refund", true
+                ];
+                
             }
 
             if (i % 50 == 0) Console.WriteLine($"Seeded {i} transactions");
@@ -518,6 +548,7 @@ public static class DataSeeder
         CashInOut = 0,
         MerchantPayment = 1,
         PayAnyone = 2,
-        InternalTransfer = 3
+        InternalTransfer = 3,
+        RefundedMerchantPayment = 4,
     }
 }

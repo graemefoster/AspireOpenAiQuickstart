@@ -1,11 +1,9 @@
-﻿using System.Drawing;
-
+﻿
 namespace OpenAiQuickstart.Web;
 
 public class Transaction
 {
     public Guid Id { get; init; }
-    public required Guid? ToId { get; init; }
     public required string? ToSortCode { get; init; }
     public required string? ToAccount { get; init; }
     public Guid From { get; init; }

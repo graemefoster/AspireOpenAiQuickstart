@@ -1,4 +1,4 @@
-﻿@page "/weather"
+﻿@page "/account"
 @attribute [StreamRendering(true)]
 @attribute [OutputCache(Duration = 5)]
 
@@ -26,7 +26,6 @@ else
         <thead>
         <tr>
             <th>Date</th>
-            <th>To Internal Account Id</th>
             <th>To Sort Code</th>
             <th>To Account</th>
             <th>Amount</th>
@@ -41,7 +40,6 @@ else
         {
             <tr>
                 <td>@transaction.Date.ToLocalTime().ToString("g")</td>
-                <td>@transaction.ToId</td>
                 <td>@transaction.ToSortCode</td>
                 <td>@transaction.ToAccount</td>
                 <td>@((transaction.Amount / 100.0).ToString("C2"))</td>

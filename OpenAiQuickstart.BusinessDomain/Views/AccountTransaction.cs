@@ -6,7 +6,6 @@ namespace OpenAiQuickstart.BusinessDomain.Views;
 public class AccountTransaction
 {
     public Guid Id { get; init; }
-    public Guid? ToId { get; init; }
     [MaxLength(6)] public string? ToSortCode { get; init; }
     [MaxLength(15)] public string? ToAccount { get; init; }
     public Guid From { get; init; }
