@@ -5,6 +5,17 @@ namespace OpenAi.Quickstart.BusinessApi.DbBuilder;
 
 public static class DataSeeder
 {
+    private static readonly int[] ByteOrder = [15, 14, 13, 12, 11, 10, 9, 8, 6, 7, 4, 5, 0, 1, 2, 3];
+    private static Guid _currentGuid = new("8c0c447a-85a2-48e7-88a2-6f84146298be");
+
+    private static Guid NextGuid()
+    {
+        var bytes = _currentGuid.ToByteArray();
+        var canIncrement = ByteOrder.Any(i => ++bytes[i] != 0);
+        _currentGuid = new Guid(canIncrement ? bytes : new byte[16]);
+        return _currentGuid;
+    }
+
     public static void Seed(this MigrationBuilder migrationBuilder)
     {
         migrationBuilder.Sql("""
@@ -97,7 +108,7 @@ public static class DataSeeder
         {
             var firstName = firstNames[seed.Next(0, firstNames.Length)];
             var lastName = lastNames[seed.Next(0, lastNames.Length)];
-            yield return [RT.Comb.Provider.Sql.Create(), firstName, lastName];
+            yield return [NextGuid(), firstName, lastName];
             if (i % 50 == 0) Console.WriteLine($"Seeded {i} customers");
         }
     }
@@ -371,7 +382,7 @@ public static class DataSeeder
             var accountNumber = seed.Next(10000000, 99999999).ToString();
             yield return
             [
-                RT.Comb.Provider.Sql.Create(), $"{merchantFirst} {merchantSecond}", category, sortCode, accountNumber,
+                NextGuid(), $"{merchantFirst} {merchantSecond}", category, sortCode, accountNumber,
                 location.Item1, location.Item2
             ];
             if (i % 50 == 0) Console.WriteLine($"Seeded {i} merchants");
@@ -390,7 +401,7 @@ public static class DataSeeder
         {
             yield return
             [
-                RT.Comb.Provider.Sql.Create(),
+                NextGuid(),
                 customerIds[seed.Next(0, customerIds.Count)],
                 $"{accountNames[seed.Next(0, accountNames.Length)]} {accountNames[seed.Next(0, accountNames.Length)]}",
                 (accountNumber++).ToString()
@@ -417,69 +428,96 @@ public static class DataSeeder
             "Netflix", "Spotify", "Amazon", "Books", "Games", "Movies", "Music"
         };
         var seed = new Random(645234);
-        var pending = new Dictionary<Guid, (Guid, Guid?, string?, string?, string, int, DateTimeOffset, bool)>();
+        var pendingMerchant =
+            new Dictionary<Guid, (Guid, Guid?, string?, string?, string, int, DateTimeOffset, bool)>();
+        var finalisedMerchant =
+            new Dictionary<Guid, (Guid, Guid?, string?, string?, string, int, DateTimeOffset, bool)>();
+
         for (int i = 0; i < 10000; i++)
         {
-            var id = RT.Comb.Provider.Sql.Create();
-            var cancelPending = seed.Next(0, 2) == 0;
-            var pendingAmount = seed.Next(1, 99999999);
-            var finaliseAmount = 0;
-            var isCredit = seed.Next(0, 2) == 0;
-            var reference = transactionDescriptors[seed.Next(0, transactionDescriptors.Length)] + (isCredit ? " refund" : string.Empty);
-
-            var transactionType = seed.Next(0, 4);
-            Guid? toAccountId = default;
-            string? toSortCode = default;
-            string? toAccountNumber = default;
-
-            if (transactionType == 0)
-            {
-                toAccountId = accountNumbers[seed.Next(0, accountNumbers.Count)].Item1;
-            }
-            else if (transactionType == 1)
-            {
-                var merchant = seed.Next(merchants.Count);
-                toSortCode = merchants[merchant].Item1;
-                toAccountNumber = merchants[merchant].Item2;
-            }
-            else if (transactionType == 2)
-            {
-                toSortCode = seed.Next(100000, 999999).ToString();
-                toAccountNumber = seed.Next(1000000, 9999999).ToString();
-            }
-            else if (transactionType == 3)
-            {
-                cancelPending = false;
-                finaliseAmount = pendingAmount;
-                pendingAmount = 0;
-                reference = "Cash";
-            }
-
-            var from = accountNumbers[seed.Next(0, accountNumbers.Count)].Item1;
             var date = DateTimeOffset.UtcNow.AddDays(-seed.Next(0, 365));
-            Guid? refersTo = null;
 
-            if (cancelPending && pending.Count > 0)
+            //what type of transaction?
+            var transactionType = (TransactionType)seed.Next(0, Enum.GetValues(typeof(TransactionType)).Length);
+
+            if (transactionType == TransactionType.CashInOut)
             {
-                refersTo = pending.Keys.ToList()[seed.Next(0, pending.Keys.Count)];
-                (from, toAccountId, toSortCode, toAccountNumber, reference, finaliseAmount, date, isCredit) = pending[refersTo.Value];
-                pending.Remove(refersTo.Value);
-                pendingAmount = 0;
-                date = date.AddMinutes(seed.Next(0, 5000));
+                var amount = seed.Next(500, 1500000);
+                var isCredit = seed.Next(0, 2) == 0;
+                var account = accountNumbers[seed.Next(0, accountNumbers.Count)].Item1;
+                var reference = "Cash " + (isCredit ? "in" : "out");
+                yield return
+                [
+                    NextGuid(), null, null, null, account, 0, amount, date, null, reference, isCredit
+                ];
             }
-            else
+            else if (transactionType == TransactionType.InternalTransfer)
             {
-                if (pendingAmount > 0)
-                {
-                    pending.Add(id, (from, toAccountId, toSortCode, toAccountNumber, reference, pendingAmount, date, isCredit));
-                }
+                var amount = seed.Next(500, 1500000);
+                var fromAccount = accountNumbers[seed.Next(0, accountNumbers.Count)].Item1;
+                var toAccount = accountNumbers[seed.Next(0, accountNumbers.Count)].Item1;
+                var reference = transactionDescriptors[seed.Next(0, transactionDescriptors.Length)];
+                var originalTransactionId = NextGuid();
+                yield return
+                [
+                    originalTransactionId, toAccount, null, null, fromAccount, 0, amount, date, null, reference, false
+                ];
+                yield return
+                [
+                    NextGuid(), fromAccount, null, null, toAccount, 0, amount, date, originalTransactionId, reference,
+                    true
+                ];
+            }
+            else if (transactionType == TransactionType.PayAnyone)
+            {
+                var amount = seed.Next(1, 150000);
+                var account = accountNumbers[seed.Next(0, accountNumbers.Count)].Item1;
+                var toSortCode = seed.Next(100000, 999999).ToString();
+                var toAccountNumber = seed.Next(1000000, 9999999).ToString();
+                var reference = transactionDescriptors[seed.Next(0, transactionDescriptors.Length)];
+                var transactionId = NextGuid();
+                var finalisedDate = date.AddMinutes(seed.Next(0, 5000));
+                yield return
+                [
+                    transactionId, null, toSortCode, toAccountNumber, account, amount, 0, date, null, reference, false
+                ];
+                yield return
+                [
+                    NextGuid(), null, toSortCode, toAccountNumber, account, 0, amount, finalisedDate, transactionId,
+                    reference, false
+                ];
+            }
+            else //if (transactionType == TransactionType.MerchantPayment)
+            {
+                var amount = seed.Next(1, 150000);
+                var account = accountNumbers[seed.Next(0, accountNumbers.Count)].Item1;
+                var merchant = seed.Next(merchants.Count);
+                var toSortCode = merchants[merchant].Item1;
+                var toAccountNumber = merchants[merchant].Item2;
+                var reference = transactionDescriptors[seed.Next(0, transactionDescriptors.Length)];
+                var transactionId = NextGuid();
+                var finalisedDate = date.AddMinutes(seed.Next(0, 5000));
+
+                yield return
+                [
+                    transactionId, null, toSortCode, toAccountNumber, account, amount, 0, date, null, reference, false
+                ];
+                yield return
+                [
+                    NextGuid(), null, toSortCode, toAccountNumber, account, 0, amount, finalisedDate, transactionId,
+                    reference, false
+                ];
             }
 
-            yield return
-            [
-                id, toAccountId, toSortCode, toAccountNumber, from, pendingAmount, finaliseAmount, date, refersTo, reference, isCredit
-            ];
             if (i % 50 == 0) Console.WriteLine($"Seeded {i} transactions");
         }
+    }
+
+    private enum TransactionType
+    {
+        CashInOut = 0,
+        MerchantPayment = 1,
+        PayAnyone = 2,
+        InternalTransfer = 3
     }
 }
