@@ -47,7 +47,7 @@ else
                 <td>@transaction.Reference</td>
                 <td>@transaction.MerchantName</td>
                 <td>@transaction.MerchantCategory</td>
-                <td>@transaction.MerchantLocation?[0], @transaction.MerchantLocation?[1]</td>
+                <td>@(transaction.MerchantLocation != null  ? (transaction.MerchantLocation[0], transaction.MerchantLocation[1]) : "")</td>
             </tr>
         }
     </table>

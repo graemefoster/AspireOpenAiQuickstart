@@ -22,7 +22,10 @@ public class BankingContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<AccountTransaction>(b => { b.ToView("AccountTransactions"); });
+        modelBuilder.Entity<AccountTransaction>(b =>
+        {
+            b.ToView("AccountTransactions");
+        });
 
         modelBuilder.Entity<Merchant>(b =>
         {
